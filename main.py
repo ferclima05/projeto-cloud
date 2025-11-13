@@ -93,7 +93,7 @@ def upload_image():
 
         # 3) Gera um ID e monta a chave no S3 (mantendo a pasta img/)
         image_id = str(uuid.uuid4())
-        s3_key = f"img/{tag.replace(" ", "_")}.jpg"
+        s3_key = f"img/{tag.replace(' ', '_')}.jpg"
 
         # 4) Faz upload no S3 com a tag em metadata (para o Lambda usar, se quiser)
         s3_client.put_object(
