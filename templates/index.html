@@ -1,147 +1,422 @@
-<!-- templates/index.html -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="utf-8" />
     <title>Image App - OpenStack Lab</title>
     <style>
+        :root {
+            --bg: #f4f5f7;
+            --fg: #222;
+            --primary: #2563eb;
+            --primary-soft: #dbeafe;
+            --border: #d1d5db;
+            --card-bg: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            max-width: 800px;
+            max-width: 1100px;
             margin: 2rem auto;
-            padding: 1rem;
+            padding: 1.5rem;
+            background: var(--bg);
+            color: var(--fg);
         }
+
+        .app {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 1.8rem 2rem;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+            border: 1px solid var(--border);
+        }
+
         h1 {
-            margin-bottom: 0.5rem;
+            margin: 0 0 0.4rem;
+            font-size: 2rem;
         }
+
+        .subtitle {
+            margin: 0;
+            color: #6b7280;
+            font-size: 0.95rem;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin: 1.5rem 0 1.2rem;
+            padding: 1rem 1.1rem;
+            border-radius: 12px;
+            background: var(--primary-soft);
+            border: 1px solid #bfdbfe;
+        }
+
         .buttons {
             display: flex;
-            gap: 0.5rem;
-            margin: 1rem 0;
+            gap: 0.6rem;
+            flex-wrap: wrap;
         }
+
         button {
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            border: 1px solid #ccc;
+            padding: 0.45rem 1.1rem;
+            border-radius: 999px;
+            border: 1px solid var(--primary);
             cursor: pointer;
-            background: #f5f5f5;
+            background: white;
+            color: var(--primary);
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: background 0.15s ease, transform 0.05s ease, box-shadow 0.15s ease;
         }
+
         button:hover {
-            background: #e5e5e5;
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+            transform: translateY(-1px);
         }
-        #image-select {
-            min-width: 250px;
+
+        button:active {
+            transform: translateY(0);
+            box-shadow: none;
         }
-        #output img {
-            max-width: 400px;
-            display: block;
-            margin-top: 1rem;
-        }
-        #status {
-            margin-top: 0.5rem;
+
+        .select-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
             font-size: 0.9rem;
-            color: #555;
+        }
+
+        label {
+            font-weight: 500;
+        }
+
+        select {
+            min-width: 260px;
+            padding: 0.4rem 0.6rem;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            font-size: 0.9rem;
+            background: white;
+        }
+
+        #status {
+            margin-top: 0.4rem;
+            font-size: 0.85rem;
+            color: #4b5563;
+        }
+
+        .content {
+            margin-top: 1.4rem;
+            display: grid;
+            grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+            gap: 1.5rem;
+        }
+
+        .panel-title {
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+        }
+
+        #gallery {
+            border-radius: 12px;
+            padding: 1rem;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 0.9rem;
+        }
+
+        .image-card {
+            background: white;
+            border-radius: 10px;
+            border: 1px solid #e5e7eb;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06);
+        }
+
+        .image-card img {
+            width: 100%;
+            height: 140px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .image-card-body {
+            padding: 0.5rem 0.6rem 0.6rem;
+            font-size: 0.8rem;
+        }
+
+        .image-card-tag {
+            font-weight: 600;
+        }
+
+        .image-card-id {
+            color: #6b7280;
+            font-size: 0.75rem;
+        }
+
+        #single-image {
+            border-radius: 12px;
+            padding: 1rem;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+
+        #single-image img {
+            max-width: 100%;
+            border-radius: 12px;
+        }
+
+        #single-image .info {
+            font-size: 0.9rem;
+        }
+
+        #single-image .image-card {
+            width: 100%;
+            height: 100%;
+            max-width: none;
+            max-height: none;
+            margin: 0;
+        }
+
+        #single-image .image-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        @media (max-width: 800px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>Image App</h1>
-    <p>Aplicação web distribuída: consome uma API pública de imagens e salva os dados no banco.</p>
+<div class="app">
+    <header>
+        <h1>Image App</h1>
+        <p class="subtitle">
+            Aplicação web distribuída: consome uma API pública de imagens e salva os dados no banco de dados.
+        </p>
+    </header>
 
-    <div class="buttons">
-        <button id="btn-upload">Upload</button>
-        <button id="btn-list">Listar</button>
-        <button id="btn-show">Mostrar</button>
-    </div>
+    <section class="controls">
+        <div class="buttons">
+            <button id="btn-upload">Upload</button>
+            <button id="btn-list">Listar</button>
+            <button id="btn-show">Mostrar</button>
+        </div>
 
-    <div>
-        <label for="image-select">Imagens cadastradas (por tag):</label>
-        <select id="image-select">
-            <!-- opções preenchidas via JS -->
-        </select>
-    </div>
+        <div class="select-wrapper">
+            <label for="image-select">Imagens cadastradas:</label>
+            <select id="image-select">
+                <!-- opções preenchidas via JS -->
+            </select>
+        </div>
+    </section>
 
     <div id="status"></div>
 
-    <div id="output"></div>
+    <section class="content">
+        <div id="gallery">
+            <div class="panel-title">Galeria (todas as imagens)</div>
+            <div id="gallery-grid" class="gallery-grid">
+                <!-- cartas criadas via JS -->
+            </div>
+        </div>
 
-    <script>
-        const statusEl = document.getElementById("status");
-        const selectEl = document.getElementById("image-select");
-        const outputEl = document.getElementById("output");
+        <div id="single-image">
+            <div class="panel-title">Imagem selecionada</div>
+            <div id="single-image-content">
+                <span style="font-size:0.85rem; color:#6b7280;">
+                    Use "Upload", "Listar" e selecione uma imagem para visualizar aqui.
+                </span>
+            </div>
+        </div>
+    </section>
+</div>
 
-        function setStatus(msg) {
-            statusEl.textContent = msg || "";
+<script>
+    const statusEl = document.getElementById("status");
+    const selectEl = document.getElementById("image-select");
+    const galleryGridEl = document.getElementById("gallery-grid");
+    const singleImageContentEl = document.getElementById("single-image-content");
+
+    function setStatus(msg) {
+        statusEl.textContent = msg || "";
+    }
+
+    // Cria um card de imagem reutilizável (galeria e imagem selecionada)
+    // data.url -> backend antigo (Postgres)
+    // data.data_url -> backend novo (Base64 -> data URL)
+    function createImageCard(data) {
+        const card = document.createElement("div");
+        card.className = "image-card";
+
+        const image = document.createElement("img");
+        image.src = data.data_url || data.url || "";
+        image.alt = data.tag || "";
+
+        const body = document.createElement("div");
+        body.className = "image-card-body";
+
+        const tagEl = document.createElement("div");
+        tagEl.className = "image-card-tag";
+        tagEl.textContent = data.tag || "sem-tag";
+
+        const idEl = document.createElement("div");
+        idEl.className = "image-card-id";
+        if (data.id !== undefined) {
+            idEl.textContent = `key=${data.id}`;
         }
 
-        async function uploadImage() {
-            setStatus("Buscando imagem na API pública e salvando no banco...");
-            try {
-                const resp = await fetch("/api/upload", { method: "POST" });
-                if (!resp.ok) throw new Error("Erro HTTP " + resp.status);
-                const data = await resp.json();
-                setStatus(`Imagem salva (id=${data.id}, tag="${data.tag}")`);
-                await loadTags();
-            } catch (err) {
-                console.error(err);
-                setStatus("Erro ao fazer upload da imagem.");
+        body.appendChild(tagEl);
+        body.appendChild(idEl);
+
+        card.appendChild(image);
+        card.appendChild(body);
+
+        return card;
+    }
+
+    // Atualiza SOMENTE o select (usado em Upload e no load inicial)
+    async function refreshSelect() {
+        try {
+            const resp = await fetch("/api/images");
+            if (!resp.ok) throw new Error("Erro HTTP " + resp.status);
+            const data = await resp.json();
+
+            selectEl.innerHTML = "";
+            data.forEach(img => {
+                const opt = document.createElement("option");
+                // img.id aqui é a image_key vinda do backend
+                opt.value = encodeURIComponent(img.id);  // valor que vai na URL
+                opt.dataset.rawId = img.id;             // valor original (debug/opcional)
+                opt.textContent = `${img.tag} (key=${img.id})`;
+                selectEl.appendChild(opt);
+            });
+
+            setStatus(`Total de imagens salvas: ${data.length}`);
+        } catch (err) {
+            console.error(err);
+            setStatus("Erro ao carregar lista de imagens.");
+        }
+    }
+
+    async function uploadImage() {
+        setStatus("Buscando imagem na API pública e salvando no banco...");
+        try {
+            const resp = await fetch("/api/upload", { method: "POST" });
+            if (!resp.ok) throw new Error("Erro HTTP " + resp.status);
+            const data = await resp.json();
+            setStatus(`Imagem salva (id=${data.id}, tag="${data.tag}")`);
+
+            // Atualiza só o select
+            await refreshSelect();
+        } catch (err) {
+            console.error(err);
+            setStatus("Erro ao fazer upload da imagem.");
+        }
+    }
+
+    // Listar: atualiza select E monta a galeria (todas as imagens)
+    async function loadImages() {
+        setStatus("Carregando imagens salvas...");
+        try {
+            const resp = await fetch("/api/images");
+            if (!resp.ok) throw new Error("Erro HTTP " + resp.status);
+            const data = await resp.json();
+
+            // Atualiza select
+            selectEl.innerHTML = "";
+            data.forEach(img => {
+                const opt = document.createElement("option");
+                opt.value = encodeURIComponent(img.id);
+                opt.dataset.rawId = img.id;
+                opt.textContent = `${img.tag} (key=${img.id})`;
+                selectEl.appendChild(opt);
+            });
+
+            // Monta galeria: para cada item, busca o detalhe (/api/images/{id})
+            galleryGridEl.innerHTML = "";
+            for (const img of data) {
+                try {
+                    const encodedId = encodeURIComponent(img.id);
+                    const respItem = await fetch(`/api/images/${encodedId}`);
+                    if (!respItem.ok) {
+                        console.error("Erro ao buscar detalhe da imagem:", img.id);
+                        continue;
+                    }
+                    const fullData = await respItem.json();
+                    const card = createImageCard(fullData);
+                    galleryGridEl.appendChild(card);
+                } catch (e) {
+                    console.error("Erro ao montar card da imagem:", img.id, e);
+                }
             }
+
+            setStatus(`Total de imagens salvas: ${data.length}`);
+        } catch (err) {
+            console.error(err);
+            setStatus("Erro ao listar imagens.");
+        }
+    }
+
+    async function showImage() {
+        const encodedId = selectEl.value;
+        if (!encodedId) {
+            setStatus("Selecione uma imagem na lista.");
+            return;
         }
 
-        async function loadTags() {
-            setStatus("Carregando imagens salvas...");
-            try {
-                const resp = await fetch("/api/images");
-                if (!resp.ok) throw new Error("Erro HTTP " + resp.status);
-                const data = await resp.json();
-                selectEl.innerHTML = "";
-                data.forEach(img => {
-                    const opt = document.createElement("option");
-                    opt.value = img.id;
-                    opt.textContent = `${img.tag} (id=${img.id})`;
-                    selectEl.appendChild(opt);
-                });
-                setStatus(`Total de imagens salvas: ${data.length}`);
-            } catch (err) {
-                console.error(err);
-                setStatus("Erro ao listar imagens.");
-            }
-        }
+        setStatus(`Carregando imagem key=${encodedId}...`);
 
-        async function showImage() {
-            const id = selectEl.value;
-            if (!id) {
-                setStatus("Selecione uma imagem na lista.");
+        try {
+            const resp = await fetch(`/api/images/${encodedId}`);
+            const data = await resp.json();
+
+            if (!resp.ok) {
+                setStatus(data.detail || "Erro ao carregar imagem.");
                 return;
             }
-            setStatus(`Carregando imagem id=${id}...`);
-            try {
-                const resp = await fetch(`/api/images/${id}`);
-                if (!resp.ok) throw new Error("Erro HTTP " + resp.status);
-                const data = await resp.json();
-                outputEl.innerHTML = "";
-                const img = document.createElement("img");
-                img.src = data.url;
-                img.alt = data.tag;
-                outputEl.appendChild(img);
 
-                const p = document.createElement("p");
-                p.textContent = `Tag: ${data.tag}`;
-                outputEl.appendChild(p);
+            singleImageContentEl.innerHTML = "";
+            const card = createImageCard(data);
+            singleImageContentEl.appendChild(card);
 
-                setStatus("Imagem carregada.");
-            } catch (err) {
-                console.error(err);
-                setStatus("Erro ao carregar imagem.");
-            }
+            setStatus("Imagem carregada.");
+        } catch (err) {
+            console.error(err);
+            setStatus("Erro ao carregar imagem.");
         }
+    }
 
-        document.getElementById("btn-upload").addEventListener("click", uploadImage);
-        document.getElementById("btn-list").addEventListener("click", loadTags);
-        document.getElementById("btn-show").addEventListener("click", showImage);
+    document.getElementById("btn-upload").addEventListener("click", uploadImage);
+    document.getElementById("btn-list").addEventListener("click", loadImages);
+    document.getElementById("btn-show").addEventListener("click", showImage);
 
-        // Carrega lista ao abrir a página
-        loadTags();
-    </script>
+    // Carrega lista ao abrir a página
+    refreshSelect();
+</script>
 </body>
 </html>

@@ -1,60 +1,54 @@
 # main.py
 import os
-from dotenv import load_dotenv
+import uuid
 from datetime import datetime
 from pathlib import Path
 
+from dotenv import load_dotenv
 import requests
-from fastapi import Depends, FastAPI, Request
+import boto3
+from botocore.exceptions import ClientError
+from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import Column, DateTime, Integer, String, create_engine
-from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
 # -------------------------------------------------------------------
-# Configuração de banco
+# Configuração AWS
 # -------------------------------------------------------------------
-# Em produção, troque para algo como:
-# DATABASE_URL = "postgresql+psycopg2://user:password@db_host:5432/imagens"
-load_dotenv(dotenv_path=Path(__file__).parent / ".env")
-DATABASE_URL = os.getenv("DATABASE_URL")
+BASE_DIR = Path(__file__).resolve().parent
+load_dotenv(dotenv_path=BASE_DIR / ".env")
 
-connect_args = {}
-if DATABASE_URL.startswith("sqlite"):
-    connect_args = {"check_same_thread": False}
+AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
+S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
+DYNAMODB_TABLE_NAME = os.getenv("DYNAMODB_TABLE_NAME")
+AWS_PROFILE = os.getenv("AWS_PROFILE")  # opcional, só pro ambiente local
 
-engine = create_engine(DATABASE_URL, connect_args=connect_args)
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
-Base = declarative_base()
+if not S3_BUCKET_NAME or not DYNAMODB_TABLE_NAME:
+    raise RuntimeError("S3_BUCKET_NAME e DYNAMODB_TABLE_NAME devem estar definidos no .env")
 
+import boto3
+from botocore.exceptions import ClientError
 
-class Image(Base):
-    __tablename__ = "images"
+# Se você estiver rodando localmente com profile (projeto-cloud-user),
+# use o AWS_PROFILE. Na EC2 (com IAM Role), você NÃO define o AWS_PROFILE
+# e ele cai no else.
+if AWS_PROFILE:
+    session = boto3.Session(profile_name=AWS_PROFILE, region_name=AWS_REGION)
+else:
+    session = boto3.Session(region_name=AWS_REGION)
 
-    id = Column(Integer, primary_key=True, index=True)
-    url = Column(String, nullable=False)
-    tag = Column(String, index=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-
-Base.metadata.create_all(bind=engine)
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
+s3_client = session.client("s3")
+dynamodb = session.resource("dynamodb")
+images_table = dynamodb.Table(DYNAMODB_TABLE_NAME)
 
 # -------------------------------------------------------------------
 # Configuração FastAPI
 # -------------------------------------------------------------------
-app = FastAPI(title="Image App - OpenStack Lab")
+app = FastAPI(title="Image App - AWS")
 
-BASE_DIR = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+
+DOG_API_URL = "https://dog.ceo/api/breeds/image/random"
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -64,65 +58,174 @@ def index(request: Request):
 
 
 # -------------------------------------------------------------------
-# Endpoints REST usados pela página
+# Endpoints REST
 # -------------------------------------------------------------------
-
-DOG_API_URL = "https://dog.ceo/api/breeds/image/random"  # API pública de imagens :contentReference[oaicite:1]{index=1}
 
 
 @app.post("/api/upload")
-def upload_image(db: Session = Depends(get_db)):
+def upload_image():
     """
     Upload:
-    - Busca uma imagem na API pública
+    - Busca uma imagem na API pública (Dog API)
     - Extrai uma 'tag' (raça) da URL
-    - Salva no banco
+    - Faz upload dos bytes da imagem no S3 em img/<id>.jpg
+    - Lambda será disparado pelo S3 e salvará a versão Base64 no DynamoDB
     """
-    resp = requests.get(DOG_API_URL, timeout=5)
-    resp.raise_for_status()
-    data = resp.json()
-    image_url = data["message"]
-
-    # URL típica: https://images.dog.ceo/breeds/hound-afghan/n02088094_1003.jpg
-    parts = image_url.split("/")
     try:
-        breed_part = parts[4]  # ex: 'hound-afghan'
-        tag = breed_part.replace("-", " ")
-    except Exception:
-        tag = "dog"
+        # 1) Busca URL da imagem
+        resp = requests.get(DOG_API_URL, timeout=5)
+        resp.raise_for_status()
+        data = resp.json()
+        image_url = data["message"]
 
-    img = Image(url=image_url, tag=tag)
-    db.add(img)
-    db.commit()
-    db.refresh(img)
+        # URL típica: https://images.dog.ceo/breeds/hound-afghan/n02088094_1003.jpg
+        parts = image_url.split("/")
+        try:
+            breed_part = parts[4]  # ex: 'hound-afghan'
+            tag = breed_part.replace("-", " ")
+        except Exception:
+            tag = "dog"
 
-    return {"id": img.id, "url": img.url, "tag": img.tag}
+        # 2) Baixa os bytes da imagem
+        img_resp = requests.get(image_url, timeout=10)
+        img_resp.raise_for_status()
+        image_bytes = img_resp.content
+
+        # 3) Gera um ID e monta a chave no S3 (mantendo a pasta img/)
+        image_id = str(uuid.uuid4())
+        s3_key = f"img/{tag.replace(" ", "_")}.jpg"
+
+        # 4) Faz upload no S3 com a tag em metadata (para o Lambda usar, se quiser)
+        s3_client.put_object(
+            Bucket=S3_BUCKET_NAME,
+            Key=s3_key,
+            Body=image_bytes,
+            ContentType="image/jpeg",
+            Metadata={"tag": tag},
+        )
+
+        # IMPORTANTE:
+        # Não gravamos no DynamoDB aqui.
+        # Assumimos que o Lambda, ao ser disparado pelo S3, vai:
+        # - Ler o objeto
+        # - Converter para Base64
+        # - Salvar no DynamoDB com:
+        #   id = image_id
+        #   tag = tag
+        #   base64_data = "<string base64>"
+
+        return {"id": image_id, "tag": tag, "s3_key": s3_key}
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"detail": f"Erro ao fazer upload da imagem: {str(e)}"},
+        )
 
 
 @app.get("/api/images")
-def list_images(db: Session = Depends(get_db)):
+def list_images():
     """
     Listar:
-    - Retorna todas as imagens cadastradas (id, tag, url).
+    - Lê todos os itens da tabela ImagensBase64.
+    - Usa image_key como id.
+    - Gera uma "tag" a partir do nome do arquivo.
     """
-    images = db.query(Image).order_by(Image.id.desc()).all()
-    return [{"id": i.id, "tag": i.tag, "url": i.url} for i in images]
+    try:
+        response = images_table.scan()
+        items = response.get("Items", [])
+
+        # Só pra depurar no terminal:
+        #print("Itens DynamoDB recebidos:", items)
+
+        result = []
+        for item in items:
+            image_key = item.get("image_key")
+            if not image_key:
+                continue
+
+            # tag = nome do arquivo sem extensão (ex: sql-server)
+            filename = image_key.split("/")[-1]
+            tag = filename.rsplit(".", 1)[0]
+
+            result.append(
+                {
+                    "id": image_key,   # vamos usar image_key como id
+                    "tag": tag,
+                }
+            )
+
+        return result
+
+    except ClientError as e:
+        msg = e.response["Error"]["Message"]
+        print("Erro ClientError ao listar imagens:", msg)
+        return JSONResponse(
+            status_code=500,
+            content={"detail": f"Erro ao listar imagens (AWS): {msg}"},
+        )
+    except Exception as e:
+        print("Erro inesperado ao listar imagens:", repr(e))
+        return JSONResponse(
+            status_code=500,
+            content={"detail": f"Erro inesperado ao listar imagens: {str(e)}"},
+        )
 
 
-@app.get("/api/images/{image_id}")
-def get_image(image_id: int, db: Session = Depends(get_db)):
+@app.get("/api/images/{image_key}")
+def get_image(image_key: str):
     """
     Mostrar:
-    - Retorna os dados de uma imagem específica.
+    - Busca um item no DynamoDB pela chave primária image_key.
+    - Monta um data_url a partir de base64_data + content_type.
     """
-    img = db.query(Image).filter(Image.id == image_id).first()
-    if not img:
-        return JSONResponse(status_code=404, content={"detail": "Imagem não encontrada"})
-    return {"id": img.id, "tag": img.tag, "url": img.url}
+    try:
+        response = images_table.get_item(Key={"image_key": image_key})
+        item = response.get("Item")
+        if not item:
+            return JSONResponse(
+                status_code=404,
+                content={"detail": "Imagem não encontrada no DynamoDB"},
+            )
+
+        base64_str = item.get("base64_data")
+        if not base64_str:
+            return JSONResponse(
+                status_code=202,
+                content={"detail": "Imagem ainda está sendo processada pelo Lambda"},
+            )
+
+        content_type = item.get("content_type", "image/jpeg")
+
+        data_url = f"data:{content_type};base64,{base64_str}"
+
+        # tag = nome do arquivo sem extensão
+        filename = image_key.split("/")[-1]
+        tag = filename.rsplit(".", 1)[0]
+
+        return {
+            "id": image_key,
+            "tag": tag,
+            "base64": base64_str,
+            "data_url": data_url,
+        }
+
+    except ClientError as e:
+        msg = e.response["Error"]["Message"]
+        print("Erro ClientError ao buscar imagem:", msg)
+        return JSONResponse(
+            status_code=500,
+            content={"detail": f"Erro ao buscar imagem (AWS): {msg}"},
+        )
+    except Exception as e:
+        print("Erro inesperado ao buscar imagem:", repr(e))
+        return JSONResponse(
+            status_code=500,
+            content={"detail": f"Erro inesperado ao buscar imagem: {str(e)}"},
+        )
 
 
 # -------------------------------------------------------------------
-# Ponto de entrada (opcional, para rodar local com python main.py)
+# Ponto de entrada (para rodar local com python main.py)
 # -------------------------------------------------------------------
 if __name__ == "__main__":
     import uvicorn
