@@ -1,4 +1,3 @@
-# main.py
 import os
 from dotenv import load_dotenv
 from datetime import datetime
@@ -11,12 +10,8 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import Column, DateTime, Integer, String, create_engine
 from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
-# -------------------------------------------------------------------
-# Configuração de banco
-# -------------------------------------------------------------------
-# Em produção, troque para algo como:
-# DATABASE_URL = "postgresql+psycopg2://user:password@db_host:5432/imagens"
 load_dotenv(dotenv_path=Path(__file__).parent / ".env")
+
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 connect_args = {}
