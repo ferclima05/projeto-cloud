@@ -131,11 +131,23 @@ def list_images():
     - Gera uma "tag" a partir do nome do arquivo.
     """
     try:
-        response = images_table.scan()
-        items = response.get("Items", [])
+        items = []
+        last_evaluated_key = None
 
-        # Só pra depurar no terminal:
-        #print("Itens DynamoDB recebidos:", items)
+        while True:
+            scan_kwargs = {
+                # Só traz o necessário pra essa rota
+                "ProjectionExpression": "image_key, created_at",
+            }
+            if last_evaluated_key:
+                scan_kwargs["ExclusiveStartKey"] = last_evaluated_key
+
+            response = images_table.scan(**scan_kwargs)
+            items.extend(response.get("Items", []))
+
+            last_evaluated_key = response.get("LastEvaluatedKey")
+            if not last_evaluated_key:
+                break  # acabou a tabela
 
         result = []
         for item in items:
@@ -149,10 +161,14 @@ def list_images():
 
             result.append(
                 {
-                    "id": image_key,   # vamos usar image_key como id
+                    "id": image_key,  # usamos image_key como id
                     "tag": tag,
+                    "created_at": item.get("created_at"),
                 }
             )
+
+        # Ordena da mais recente para a mais antiga. Strings ISO8601 ordenam bem lexicograficamente.
+        result.sort(key=lambda x: x.get("created_at") or "", reverse=True)
 
         return result
 
@@ -207,6 +223,7 @@ def get_image(image_key: str):
             "tag": tag,
             "base64": base64_str,
             "data_url": data_url,
+            "created_at": item.get("created_at"),
         }
 
     except ClientError as e:
