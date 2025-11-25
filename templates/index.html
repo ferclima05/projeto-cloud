@@ -139,14 +139,21 @@
         .select-wrapper {
             display: flex; align-items: center;
             gap: 0.5rem; font-size: 0.9rem; color: var(--muted);
+            flex: 1 1 280px;
         }
 
-        label { font-weight: 600; color: var(--ink); }
+        label { font-weight: 600; color: var(--ink); white-space: nowrap; }
 
         select {
-            min-width: 260px; padding: 0.45rem 0.7rem;
+            width: 100%;
+            min-width: 0;
+            padding: 0.45rem 0.7rem;
             border-radius: 999px; border: 1px solid var(--border);
             font-size: 0.95rem; background: white;
+            max-width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         #status { margin-top: 0.4rem; font-size: 0.9rem; color: var(--muted); }
@@ -201,6 +208,89 @@
         .image-card-body { padding: 0.65rem 0.75rem 0.9rem; font-size: 0.9rem; }
         .image-card-tag { font-weight: 600; color: var(--ink); }
         .image-card-meta { margin-top: 0.2rem; color: var(--muted); font-size: 0.8rem; }
+
+        .base64-panel {
+            margin-top: 1.5rem;
+            background: var(--surface-strong);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            box-shadow: 0 12px 25px rgba(18, 32, 43, 0.08);
+            padding: 1.25rem;
+        }
+
+        .base64-panel textarea {
+            width: 100%;
+            min-height: 160px;
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(34, 43, 56, 0.15);
+            padding: 0.75rem;
+            font-family: "JetBrains Mono", "Fira Mono", "Consolas", monospace;
+            font-size: 0.85rem;
+            resize: vertical;
+            background: white;
+            color: var(--deep);
+        }
+
+        .base64-actions {
+            margin-top: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+
+        .copy-button {
+            border-radius: 999px;
+            border: 1px solid var(--accent);
+            background: var(--accent);
+            color: white;
+            font-weight: 600;
+            padding: 0.35rem 1.1rem;
+            cursor: pointer;
+            box-shadow: 0 12px 20px rgba(240, 93, 35, 0.35);
+            transition: transform 0.12s ease, box-shadow 0.12s ease;
+        }
+
+        .copy-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .copy-button:not(:disabled):hover {
+            transform: translateY(-2px);
+        }
+
+        .meta-grid {
+            list-style: none;
+            padding: 0;
+            margin: 0.8rem 0 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .meta-grid li {
+            border-radius: var(--radius-sm);
+            border: 1px dashed rgba(34, 43, 56, 0.12);
+            padding: 0.6rem 0.7rem;
+            background: var(--bg-secondary);
+            font-size: 0.82rem;
+        }
+
+        .meta-label {
+            display: block;
+            font-weight: 600;
+            color: var(--ink);
+        }
+
+        .meta-value {
+            display: block;
+            margin-top: 0.15rem;
+            color: var(--muted);
+        }
 
         #single-image { display: flex; flex-direction: column; gap: 0.9rem; }
         #single-image .image-card { margin: 0; }
@@ -276,6 +366,16 @@
                         </div>
                     </div>
                 </section>
+
+                <section class="base64-panel" aria-live="polite">
+                    <div class="panel-title">Base64 gerado (somente leitura)</div>
+                    <textarea id="base64-output" readonly
+                        placeholder="Selecione uma imagem da galeria para visualizar a string Base64."></textarea>
+                    <div class="base64-actions">
+                        <button id="btn-copy-base64" class="copy-button" type="button" disabled>Copiar Base64</button>
+                        <span id="base64-meta">Nenhuma imagem carregada.</span>
+                    </div>
+                </section>
             </div>
         </div>
     </main>
@@ -285,6 +385,9 @@
     const selectEl = document.getElementById("image-select");
     const galleryGridEl = document.getElementById("gallery-grid");
     const singleImageContentEl = document.getElementById("single-image-content");
+    const base64OutputEl = document.getElementById("base64-output");
+    const base64MetaEl = document.getElementById("base64-meta");
+    const copyBase64Btn = document.getElementById("btn-copy-base64");
 
     function setStatus(msg) {
         statusEl.textContent = msg || "";
@@ -300,11 +403,59 @@
         });
     }
 
+    function formatBytes(value) {
+        const num = Number(value);
+        if (!Number.isFinite(num) || num <= 0) return "";
+        const units = ["B", "KB", "MB", "GB", "TB"];
+        let idx = 0;
+        let size = num;
+        while (size >= 1024 && idx < units.length - 1) {
+            size /= 1024;
+            idx += 1;
+        }
+        const digits = size >= 100 ? 0 : size >= 10 ? 1 : 2;
+        return `${size.toFixed(digits)} ${units[idx]}`;
+    }
+
     function updateSingleImageView(data) {
         if (!data) return;
         singleImageContentEl.innerHTML = "";
         const card = createImageCardShow(data);
         singleImageContentEl.appendChild(card);
+        updateBase64Panel(data);
+    }
+
+    function updateBase64Panel(data) {
+        if (!data || !data.base64) {
+            base64OutputEl.value = "";
+            base64MetaEl.textContent = "Nenhuma imagem carregada.";
+            copyBase64Btn.disabled = true;
+            return;
+        }
+
+        base64OutputEl.value = data.base64;
+        copyBase64Btn.disabled = false;
+
+        const base64Chars = data.base64_size
+            ? Number(data.base64_size).toLocaleString("pt-BR")
+            : data.base64.length.toLocaleString("pt-BR");
+
+        const metaParts = [];
+        const originalSize = formatBytes(data.size_bytes);
+        if (originalSize) metaParts.push(`Tamanho: ${originalSize}`);
+
+        metaParts.push(`Base64: ${base64Chars} caracteres`);
+
+        const chunkCount = Number(data.chunk_count) || 0;
+        const storageMode = data.storage_mode || (chunkCount > 1 ? "chunked" : "single");
+        if (chunkCount) {
+            metaParts.push(`${chunkCount} chunk(s)`);
+        } else {
+            metaParts.push("Sem divisão");
+        }
+        metaParts.push(`Modo ${storageMode}`);
+
+        base64MetaEl.textContent = metaParts.join(" • ");
     }
 
     function syncSelectWithImage(rawId) {
@@ -339,6 +490,17 @@
             metaEl.className = "image-card-meta";
             metaEl.textContent = `Criada em ${createdAtText}`;
             body.appendChild(metaEl);
+        }
+
+        const extraParts = [];
+        const sizeText = formatBytes(data.size_bytes);
+        if (sizeText) extraParts.push(sizeText);
+        if (data.chunk_count) extraParts.push(`${data.chunk_count} chunk(s)`);
+        if (extraParts.length) {
+            const infoEl = document.createElement("div");
+            infoEl.className = "image-card-meta";
+            infoEl.textContent = extraParts.join(" • ");
+            body.appendChild(infoEl);
         }
 
         const showSelectedImage = () => {
@@ -384,6 +546,47 @@
             metaEl.className = "image-card-meta";
             metaEl.textContent = `Criada em ${createdAtText}`;
             body.appendChild(metaEl);
+        }
+
+        const infoList = document.createElement("ul");
+        infoList.className = "meta-grid";
+        const chunkCount = Number(data.chunk_count) || 0;
+        const entries = [
+            { label: "Tamanho original", value: formatBytes(data.size_bytes) || "—" },
+            { label: "Content-Type", value: data.content_type || "—" },
+            {
+                label: "Chunks armazenados",
+                value: chunkCount
+                    ? `${chunkCount} (${data.storage_mode || "chunked"})`
+                    : "1 (single)",
+            },
+            {
+                label: "Caracteres Base64",
+                value: data.base64_size
+                    ? Number(data.base64_size).toLocaleString("pt-BR")
+                    : data.base64
+                        ? data.base64.length.toLocaleString("pt-BR")
+                        : "—",
+            },
+            { label: "S3 Key", value: data.s3_key || data.id },
+        ];
+
+        entries.forEach(({ label, value }) => {
+            if (!value) return;
+            const li = document.createElement("li");
+            const labelEl = document.createElement("span");
+            labelEl.className = "meta-label";
+            labelEl.textContent = label;
+            const valueEl = document.createElement("span");
+            valueEl.className = "meta-value";
+            valueEl.textContent = value;
+            li.appendChild(labelEl);
+            li.appendChild(valueEl);
+            infoList.appendChild(li);
+        });
+
+        if (infoList.children.length) {
+            body.appendChild(infoList);
         }
 
         return card;
@@ -499,9 +702,13 @@
                 try {
                     const encodedId = encodeURIComponent(img.id);
                     const respItem = await fetch(`/api/images/${encodedId}`);
+                    const payload = await respItem.json();
+                    if (respItem.status === 202) {
+                        console.warn("Imagem ainda processando no Lambda:", img.id);
+                        continue;
+                    }
                     if (!respItem.ok) continue;
-                    const fullData = await respItem.json();
-                    const card = createImageCard(fullData);
+                    const card = createImageCard(payload);
                     galleryGridEl.appendChild(card);
                 } catch (e) {
                     console.error("Erro ao montar card:", img.id, e);
@@ -528,6 +735,12 @@
             const resp = await fetch(`/api/images/${encodedId}`);
             const data = await resp.json();
 
+            if (resp.status === 202) {
+                setStatus(data.detail || "Imagem ainda está sendo processada pelo Lambda.");
+                updateBase64Panel(null);
+                return;
+            }
+
             if (!resp.ok) {
                 setStatus(data.detail || "Erro ao carregar imagem.");
                 return;
@@ -541,6 +754,24 @@
             setStatus("Erro ao carregar imagem.");
         }
     }
+
+    copyBase64Btn.addEventListener("click", async () => {
+        if (!base64OutputEl.value) return;
+        try {
+            if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(base64OutputEl.value);
+                setStatus("Base64 copiado para a área de transferência.");
+                return;
+            }
+            throw new Error("Clipboard API indisponível");
+        } catch (err) {
+            base64OutputEl.select();
+            document.execCommand("copy");
+            setStatus("Base64 copiado (fallback).");
+        }
+    });
+
+    updateBase64Panel(null);
 
     document.getElementById("btn-upload").addEventListener("click", uploadImage);
     document.getElementById("btn-list").addEventListener("click", loadImages);

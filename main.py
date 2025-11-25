@@ -58,6 +58,39 @@ templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 DOG_API_URL = "https://dog.ceo/api/breeds/image/random"
 
 
+def _guess_tag_from_key(image_key: str | None) -> str:
+    """
+    DynamoDB agora armazena a tag enviada pelo cliente, mas mantemos
+    um fallback baseado no nome do arquivo para retrocompatibilidade.
+    """
+    if not image_key:
+        return "imagem"
+
+    filename = image_key.split("/")[-1]
+    if "." in filename:
+        filename = filename.rsplit(".", 1)[0]
+    return filename or "imagem"
+
+
+def _extract_base64_payload(item: dict) -> tuple[str, str, int]:
+    """
+    Retorna (base64, storage_mode, chunk_count).
+    O Lambda pode salvar os dados em base64_data (single chunk) ou
+    em base64_chunks (lista) quando o arquivo fica grande.
+    """
+    if not item:
+        return "", "single", 0
+
+    base64_chunks = item.get("base64_chunks") or []
+    if base64_chunks:
+        combined = "".join(base64_chunks)
+        return combined, "chunked", len(base64_chunks)
+
+    base64_data = item.get("base64_data") or ""
+    chunk_count = 1 if base64_data else 0
+    return base64_data, "single", chunk_count
+
+
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
     """Página com os 3 botões."""
@@ -191,7 +224,7 @@ def list_images():
 
         while True:
             scan_kwargs = {
-                "ProjectionExpression": "image_key, created_at",
+                "ProjectionExpression": "image_key, created_at, tag, size_bytes, chunk_count, storage_mode",
             }
             if last_evaluated_key:
                 scan_kwargs["ExclusiveStartKey"] = last_evaluated_key
@@ -209,14 +242,16 @@ def list_images():
             if not image_key:
                 continue
 
-            filename = image_key.split("/")[-1]
-            tag = filename.rsplit(".", 1)[0]
+            tag = item.get("tag") or _guess_tag_from_key(image_key)
 
             result.append(
                 {
                     "id": image_key,
                     "tag": tag,
                     "created_at": item.get("created_at"),
+                    "size_bytes": item.get("size_bytes"),
+                    "chunk_count": item.get("chunk_count"),
+                    "storage_mode": item.get("storage_mode"),
                 }
             )
 
@@ -254,7 +289,7 @@ def get_image(image_key: str):
                 content={"detail": "Imagem não encontrada no DynamoDB"},
             )
 
-        base64_str = item.get("base64_data")
+        base64_str, storage_mode, chunk_count = _extract_base64_payload(item)
         if not base64_str:
             return JSONResponse(
                 status_code=202,
@@ -264,15 +299,22 @@ def get_image(image_key: str):
         content_type = item.get("content_type", "image/jpeg")
         data_url = f"data:{content_type};base64,{base64_str}"
 
-        filename = image_key.split("/")[-1]
-        tag = filename.rsplit(".", 1)[0]
-
         return {
             "id": image_key,
-            "tag": tag,
+            "tag": item.get("tag") or _guess_tag_from_key(image_key),
+            "image_id": item.get("image_id"),
+            "content_type": content_type,
             "base64": base64_str,
             "data_url": data_url,
             "created_at": item.get("created_at"),
+            "size_bytes": item.get("size_bytes"),
+            "base64_size": item.get("base64_size"),
+            "chunk_count": chunk_count,
+            "chunk_size": item.get("chunk_size"),
+            "storage_mode": storage_mode,
+            "bucket": item.get("bucket"),
+            "s3_key": item.get("s3_key"),
+            "etag": item.get("etag"),
         }
 
     except ClientError as e:
