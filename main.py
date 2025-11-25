@@ -1,16 +1,17 @@
 # main.py
 import os
 import uuid
-from datetime import datetime
 from pathlib import Path
 
 from dotenv import load_dotenv
 import requests
 import boto3
 from botocore.exceptions import ClientError
-from fastapi import FastAPI, Request
+
+from fastapi import FastAPI, Request, Body
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
 
 # -------------------------------------------------------------------
 # Configuração AWS
@@ -26,12 +27,8 @@ AWS_PROFILE = os.getenv("AWS_PROFILE")  # opcional, só pro ambiente local
 if not S3_BUCKET_NAME or not DYNAMODB_TABLE_NAME:
     raise RuntimeError("S3_BUCKET_NAME e DYNAMODB_TABLE_NAME devem estar definidos no .env")
 
-import boto3
-from botocore.exceptions import ClientError
-
 # Se você estiver rodando localmente com profile (projeto-cloud-user),
-# use o AWS_PROFILE. Na EC2 (com IAM Role), você NÃO define o AWS_PROFILE
-# e ele cai no else.
+# use o AWS_PROFILE. Na EC2 (com IAM Role), você NÃO define o AWS_PROFILE.
 if AWS_PROFILE:
     session = boto3.Session(profile_name=AWS_PROFILE, region_name=AWS_REGION)
 else:
@@ -45,6 +42,16 @@ images_table = dynamodb.Table(DYNAMODB_TABLE_NAME)
 # Configuração FastAPI
 # -------------------------------------------------------------------
 app = FastAPI(title="Image App - AWS")
+
+# CORS só pro seu front falar com o FastAPI.
+# Não afeta PUT direto no S3 (isso é CORS do bucket).
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
@@ -61,60 +68,109 @@ def index(request: Request):
 # Endpoints REST
 # -------------------------------------------------------------------
 
+@app.post("/api/presign")
+def create_presigned_upload(
+    tag: str = Body(default="dog"),
+    content_type: str = Body(default="image/jpeg"),
+):
+    """
+    Gera URL pré-assinada para upload direto do cliente (browser) pro S3 via PUT.
+
+    Retorna:
+      - image_id
+      - s3_key
+      - upload_url
+
+    IMPORTANTE:
+    Como estamos assinando com Metadata, o cliente DEVE enviar
+    os headers x-amz-meta-tag e x-amz-meta-image_id no PUT.
+    """
+    try:
+        image_id = str(uuid.uuid4())
+        safe_tag = tag.replace(" ", "_")
+
+        # extensão baseada no content-type
+        if "jpeg" in content_type:
+            ext = "jpg"
+        else:
+            ext = content_type.split("/")[-1] if "/" in content_type else "bin"
+
+        s3_key = f"img/{image_id}_{safe_tag}.{ext}"
+
+        presigned_url = s3_client.generate_presigned_url(
+            ClientMethod="put_object",
+            Params={
+                "Bucket": S3_BUCKET_NAME,
+                "Key": s3_key,
+                "ContentType": content_type,
+                "Metadata": {"tag": tag, "image_id": image_id},
+            },
+            ExpiresIn=300,  # 5 min
+        )
+
+        return {
+            "image_id": image_id,
+            "s3_key": s3_key,
+            "upload_url": presigned_url,
+        }
+
+    except ClientError as e:
+        msg = e.response["Error"]["Message"]
+        print("Erro ao gerar presigned URL:", msg)
+        return JSONResponse(
+            status_code=500,
+            content={"detail": f"Erro ao gerar presigned URL: {msg}"},
+        )
+    except Exception as e:
+        print("Erro inesperado ao gerar presigned URL:", repr(e))
+        return JSONResponse(
+            status_code=500,
+            content={"detail": f"Erro inesperado ao gerar presigned URL: {str(e)}"},
+        )
+
 
 @app.post("/api/upload")
 def upload_image():
     """
-    Upload:
-    - Busca uma imagem na API pública (Dog API)
-    - Extrai uma 'tag' (raça) da URL
-    - Faz upload dos bytes da imagem no S3 em img/<id>.jpg
-    - Lambda será disparado pelo S3 e salvará a versão Base64 no DynamoDB
+    Upload server-side (mantido como teste):
+    - Busca uma imagem na Dog API
+    - Extrai uma 'tag' (raça)
+    - Faz upload dos bytes no S3
+    - Lambda salva Base64 no DynamoDB
+
+    OBS: não é mais o fluxo principal do requisito, mas é útil pra debug.
     """
     try:
-        # 1) Busca URL da imagem
         resp = requests.get(DOG_API_URL, timeout=5)
         resp.raise_for_status()
         data = resp.json()
         image_url = data["message"]
 
-        # URL típica: https://images.dog.ceo/breeds/hound-afghan/n02088094_1003.jpg
         parts = image_url.split("/")
         try:
-            breed_part = parts[4]  # ex: 'hound-afghan'
+            breed_part = parts[4]
             tag = breed_part.replace("-", " ")
         except Exception:
             tag = "dog"
 
-        # 2) Baixa os bytes da imagem
         img_resp = requests.get(image_url, timeout=10)
         img_resp.raise_for_status()
         image_bytes = img_resp.content
 
-        # 3) Gera um ID e monta a chave no S3 (mantendo a pasta img/)
         image_id = str(uuid.uuid4())
-        s3_key = f"img/{tag.replace(' ', '_')}.jpg"
+        safe_tag = tag.replace(" ", "_")
+        s3_key = f"img/{image_id}_{safe_tag}.jpg"
 
-        # 4) Faz upload no S3 com a tag em metadata (para o Lambda usar, se quiser)
         s3_client.put_object(
             Bucket=S3_BUCKET_NAME,
             Key=s3_key,
             Body=image_bytes,
             ContentType="image/jpeg",
-            Metadata={"tag": tag},
+            Metadata={"tag": tag, "image_id": image_id},
         )
 
-        # IMPORTANTE:
-        # Não gravamos no DynamoDB aqui.
-        # Assumimos que o Lambda, ao ser disparado pelo S3, vai:
-        # - Ler o objeto
-        # - Converter para Base64
-        # - Salvar no DynamoDB com:
-        #   id = image_id
-        #   tag = tag
-        #   base64_data = "<string base64>"
-
         return {"id": image_id, "tag": tag, "s3_key": s3_key}
+
     except Exception as e:
         return JSONResponse(
             status_code=500,
@@ -126,9 +182,8 @@ def upload_image():
 def list_images():
     """
     Listar:
-    - Lê todos os itens da tabela ImagensBase64.
+    - Lê todos os itens da tabela.
     - Usa image_key como id.
-    - Gera uma "tag" a partir do nome do arquivo.
     """
     try:
         items = []
@@ -136,7 +191,6 @@ def list_images():
 
         while True:
             scan_kwargs = {
-                # Só traz o necessário pra essa rota
                 "ProjectionExpression": "image_key, created_at",
             }
             if last_evaluated_key:
@@ -147,7 +201,7 @@ def list_images():
 
             last_evaluated_key = response.get("LastEvaluatedKey")
             if not last_evaluated_key:
-                break  # acabou a tabela
+                break
 
         result = []
         for item in items:
@@ -155,21 +209,18 @@ def list_images():
             if not image_key:
                 continue
 
-            # tag = nome do arquivo sem extensão (ex: sql-server)
             filename = image_key.split("/")[-1]
             tag = filename.rsplit(".", 1)[0]
 
             result.append(
                 {
-                    "id": image_key,  # usamos image_key como id
+                    "id": image_key,
                     "tag": tag,
                     "created_at": item.get("created_at"),
                 }
             )
 
-        # Ordena da mais recente para a mais antiga. Strings ISO8601 ordenam bem lexicograficamente.
         result.sort(key=lambda x: x.get("created_at") or "", reverse=True)
-
         return result
 
     except ClientError as e:
@@ -191,8 +242,8 @@ def list_images():
 def get_image(image_key: str):
     """
     Mostrar:
-    - Busca um item no DynamoDB pela chave primária image_key.
-    - Monta um data_url a partir de base64_data + content_type.
+    - Busca um item no DynamoDB pela PK image_key.
+    - Retorna data_url.
     """
     try:
         response = images_table.get_item(Key={"image_key": image_key})
@@ -211,10 +262,8 @@ def get_image(image_key: str):
             )
 
         content_type = item.get("content_type", "image/jpeg")
-
         data_url = f"data:{content_type};base64,{base64_str}"
 
-        # tag = nome do arquivo sem extensão
         filename = image_key.split("/")[-1]
         tag = filename.rsplit(".", 1)[0]
 
@@ -241,10 +290,6 @@ def get_image(image_key: str):
         )
 
 
-# -------------------------------------------------------------------
-# Ponto de entrada (para rodar local com python main.py)
-# -------------------------------------------------------------------
 if __name__ == "__main__":
     import uvicorn
-
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

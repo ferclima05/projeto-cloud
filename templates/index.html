@@ -27,9 +27,7 @@
             --shadow-card: 0 16px 35px rgba(14, 22, 30, 0.1);
         }
 
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
 
         body {
             margin: 0;
@@ -39,82 +37,43 @@
             min-height: 100vh;
         }
 
-        img {
-            max-width: 100%;
-            display: block;
-        }
-
-        a {
-            color: inherit;
-            text-decoration: none;
-        }
-
-        .container {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 0 2rem;
-        }
+        img { max-width: 100%; display: block; }
+        a { color: inherit; text-decoration: none; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 0 2rem; }
 
         .masthead {
-            position: sticky;
-            top: 0;
-            z-index: 10;
+            position: sticky; top: 0; z-index: 10;
             background: rgba(255, 255, 255, 0.92);
             backdrop-filter: blur(16px);
             box-shadow: 0 10px 25px rgba(18, 32, 43, 0.08);
         }
 
         .nav {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
-            padding: 1rem 0;
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 1rem; padding: 1rem 0;
         }
 
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 0.85rem;
-        }
+        .brand { display: flex; align-items: center; gap: 0.85rem; }
 
         .brand-icon {
-            width: 54px;
-            height: 54px;
-            border-radius: 18px;
+            width: 54px; height: 54px; border-radius: 18px;
             background: linear-gradient(140deg, #f9c66a, var(--accent));
-            color: white;
-            display: grid;
-            place-items: center;
+            color: white; display: grid; place-items: center;
             font-family: "Playfair Display", serif;
-            font-size: 1.2rem;
-            letter-spacing: 1px;
+            font-size: 1.2rem; letter-spacing: 1px;
         }
 
-        .brand-title {
-            font-weight: 600;
-            color: var(--ink);
-            margin: 0;
-        }
-
-        .brand span {
-            font-size: 0.85rem;
-            color: var(--muted);
-        }
+        .brand-title { font-weight: 600; color: var(--ink); margin: 0; }
+        .brand span { font-size: 0.85rem; color: var(--muted); }
 
         .nav-actions {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            flex-wrap: wrap;
-            justify-content: flex-end;
+            display: flex; align-items: center; gap: 0.75rem;
+            flex-wrap: wrap; justify-content: flex-end;
         }
 
         .nav-actions a {
-            padding: 0.45rem 0.8rem;
-            border-radius: 999px;
-            font-weight: 500;
-            color: var(--muted);
+            padding: 0.45rem 0.8rem; border-radius: 999px;
+            font-weight: 500; color: var(--muted);
         }
 
         .nav-actions a:hover {
@@ -124,10 +83,8 @@
 
         .btn-pill {
             border: 1px solid rgba(34, 43, 56, 0.25);
-            padding: 0.45rem 1.3rem;
-            border-radius: 999px;
-            font-weight: 600;
-            color: var(--ink);
+            padding: 0.45rem 1.3rem; border-radius: 999px;
+            font-weight: 600; color: var(--ink);
         }
 
         .btn-pill.accent {
@@ -137,79 +94,7 @@
             box-shadow: 0 14px 30px rgba(240, 93, 35, 0.25);
         }
 
-        main {
-            padding: 3rem 0 4rem;
-        }
-
-        .hero-panel {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 2.5rem;
-            padding: 3.5rem 0 2rem;
-            align-items: center;
-        }
-
-        .hero-panel h1 {
-            font-size: clamp(2rem, 4vw, 3rem);
-            font-family: "Playfair Display", serif;
-            color: var(--deep);
-            margin: 0.8rem 0 0.7rem;
-        }
-
-        .hero-panel p {
-            color: var(--muted);
-            font-size: 1rem;
-            margin-bottom: 1.6rem;
-        }
-
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            background: var(--accent-soft);
-            color: var(--accent);
-            padding: 0.3rem 0.9rem;
-            border-radius: 999px;
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-
-        .hero-card {
-            background: var(--surface-strong);
-            border-radius: var(--radius-lg);
-            padding: 2rem;
-            box-shadow: var(--shadow-soft);
-            display: grid;
-            gap: 1.2rem;
-        }
-
-        .hero-card small {
-            text-transform: uppercase;
-            font-size: 0.75rem;
-            letter-spacing: 2px;
-            color: var(--muted);
-        }
-
-        .hero-card strong {
-            font-size: 1.1rem;
-            color: var(--ink);
-        }
-
-        .hero-card .row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
-        }
-
-        .hero-card .pill {
-            background: var(--bg-secondary);
-            color: #265345;
-            padding: 0.35rem 0.9rem;
-            border-radius: 999px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
+        main { padding: 3rem 0 4rem; }
 
         .app {
             background: var(--surface);
@@ -219,46 +104,26 @@
             border: 1px solid var(--border);
         }
 
-        .app header h2 {
-            margin: 0;
-            font-size: 1.8rem;
-            color: var(--deep);
-        }
-
-        .subtitle {
-            margin: 0.2rem 0 0;
-            color: var(--muted);
-            font-size: 1rem;
-        }
+        .app header h2 { margin: 0; font-size: 1.8rem; color: var(--deep); }
+        .subtitle { margin: 0.2rem 0 0; color: var(--muted); font-size: 1rem; }
 
         .controls {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
-            margin: 1.5rem 0 1.2rem;
-            padding: 1rem 1.1rem;
+            display: flex; flex-wrap: wrap; align-items: center;
+            justify-content: space-between; gap: 1rem;
+            margin: 1.5rem 0 1.2rem; padding: 1rem 1.1rem;
             border-radius: var(--radius-md);
             background: var(--bg-secondary);
             border: 1px solid rgba(34, 43, 56, 0.08);
         }
 
-        .buttons {
-            display: flex;
-            gap: 0.6rem;
-            flex-wrap: wrap;
-        }
+        .buttons { display: flex; gap: 0.6rem; flex-wrap: wrap; }
 
         button {
-            padding: 0.45rem 1.1rem;
-            border-radius: 999px;
+            padding: 0.45rem 1.1rem; border-radius: 999px;
             border: 1px solid var(--accent);
             cursor: pointer;
-            background: white;
-            color: var(--accent);
-            font-weight: 600;
-            font-size: 0.95rem;
+            background: white; color: var(--accent);
+            font-weight: 600; font-size: 0.95rem;
             transition: background 0.15s ease, transform 0.05s ease, box-shadow 0.15s ease;
         }
 
@@ -269,55 +134,32 @@
             transform: translateY(-1px);
         }
 
-        button:active {
-            transform: translateY(0);
-            box-shadow: none;
-        }
+        button:active { transform: translateY(0); box-shadow: none; }
 
         .select-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.9rem;
-            color: var(--muted);
+            display: flex; align-items: center;
+            gap: 0.5rem; font-size: 0.9rem; color: var(--muted);
         }
 
-        label {
-            font-weight: 600;
-            color: var(--ink);
-        }
+        label { font-weight: 600; color: var(--ink); }
 
         select {
-            min-width: 260px;
-            padding: 0.45rem 0.7rem;
-            border-radius: 999px;
-            border: 1px solid var(--border);
-            font-size: 0.95rem;
-            background: white;
+            min-width: 260px; padding: 0.45rem 0.7rem;
+            border-radius: 999px; border: 1px solid var(--border);
+            font-size: 0.95rem; background: white;
         }
 
-        #status {
-            margin-top: 0.4rem;
-            font-size: 0.9rem;
-            color: var(--muted);
-        }
+        #status { margin-top: 0.4rem; font-size: 0.9rem; color: var(--muted); }
 
         .content {
-            margin-top: 1.4rem;
-            display: grid;
+            margin-top: 1.4rem; display: grid;
             grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
             gap: 1.5rem;
         }
 
-        .panel-title {
-            font-weight: 600;
-            margin-bottom: 0.4rem;
-            font-size: 1rem;
-            color: var(--ink);
-        }
+        .panel-title { font-weight: 600; margin-bottom: 0.4rem; font-size: 1rem; color: var(--ink); }
 
-        #gallery,
-        #single-image {
+        #gallery, #single-image {
             border-radius: var(--radius-md);
             padding: 1.2rem;
             background: var(--surface-strong);
@@ -332,19 +174,15 @@
         }
 
         .image-card {
-            background: white;
-            border-radius: 16px;
+            background: white; border-radius: 16px;
             border: 1px solid rgba(18, 32, 43, 0.08);
             overflow: hidden;
-            display: flex;
-            flex-direction: column;
+            display: flex; flex-direction: column;
             box-shadow: 0 12px 20px rgba(18, 32, 43, 0.08);
             transition: transform 0.12s ease, box-shadow 0.12s ease;
         }
 
-        .image-card.selectable {
-            cursor: pointer;
-        }
+        .image-card.selectable { cursor: pointer; }
 
         .image-card.selectable:hover,
         .image-card.selectable:focus-visible {
@@ -360,56 +198,22 @@
             object-fit: cover;
         }
 
-        .image-card-body {
-            padding: 0.65rem 0.75rem 0.9rem;
-            font-size: 0.9rem;
-        }
+        .image-card-body { padding: 0.65rem 0.75rem 0.9rem; font-size: 0.9rem; }
+        .image-card-tag { font-weight: 600; color: var(--ink); }
+        .image-card-meta { margin-top: 0.2rem; color: var(--muted); font-size: 0.8rem; }
 
-        .image-card-tag {
-            font-weight: 600;
-            color: var(--ink);
-        }
-
-        .image-card-meta {
-            margin-top: 0.2rem;
-            color: var(--muted);
-            font-size: 0.8rem;
-        }
-
-        #single-image {
-            display: flex;
-            flex-direction: column;
-            gap: 0.9rem;
-        }
-
-        #single-image .image-card {
-            margin: 0;
-        }
+        #single-image { display: flex; flex-direction: column; gap: 0.9rem; }
+        #single-image .image-card { margin: 0; }
 
         @media (max-width: 900px) {
-            .nav {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .nav-actions {
-                justify-content: flex-start;
-            }
-
-            .content {
-                grid-template-columns: 1fr;
-            }
+            .nav { flex-direction: column; align-items: flex-start; }
+            .nav-actions { justify-content: flex-start; }
+            .content { grid-template-columns: 1fr; }
         }
 
         @media (max-width: 600px) {
-            .container {
-                padding: 0 1.2rem;
-            }
-
-            select {
-                min-width: auto;
-                width: 100%;
-            }
+            .container { padding: 0 1.2rem; }
+            select { min-width: auto; width: 100%; }
         }
     </style>
 </head>
@@ -442,40 +246,36 @@
                     </p>
                 </header>
 
-    <section class="controls">
-        <div class="buttons">
-            <button id="btn-upload">Upload</button>
-            <button id="btn-list">Listar</button>
-            <button id="btn-show">Mostrar</button>
-        </div>
+                <section class="controls">
+                    <div class="buttons">
+                        <button id="btn-upload">Upload</button>
+                        <button id="btn-list">Listar</button>
+                        <button id="btn-show">Mostrar</button>
+                    </div>
 
-        <div class="select-wrapper">
-            <label for="image-select">Imagens cadastradas:</label>
-            <select id="image-select">
-                <!-- opções preenchidas via JS -->
-            </select>
-        </div>
-    </section>
+                    <div class="select-wrapper">
+                        <label for="image-select">Imagens cadastradas:</label>
+                        <select id="image-select"></select>
+                    </div>
+                </section>
 
-    <div id="status"></div>
+                <div id="status"></div>
 
-    <section class="content">
-        <div id="gallery">
-            <div class="panel-title">Galeria (todas as imagens)</div>
-            <div id="gallery-grid" class="gallery-grid">
-                <!-- cartas criadas via JS -->
-            </div>
-        </div>
+                <section class="content">
+                    <div id="gallery">
+                        <div class="panel-title">Galeria (todas as imagens)</div>
+                        <div id="gallery-grid" class="gallery-grid"></div>
+                    </div>
 
-        <div id="single-image">
-            <div class="panel-title">Imagem selecionada</div>
-            <div id="single-image-content">
-                <span style="font-size:0.85rem; color:#6b7280;">
-                    Use "Upload", "Listar" e selecione uma imagem para visualizar aqui.
-                </span>
-            </div>
-        </div>
-    </section>
+                    <div id="single-image">
+                        <div class="panel-title">Imagem selecionada</div>
+                        <div id="single-image-content">
+                            <span style="font-size:0.85rem; color:#6b7280;">
+                                Use "Upload", "Listar" e selecione uma imagem para visualizar aqui.
+                            </span>
+                        </div>
+                    </div>
+                </section>
             </div>
         </div>
     </main>
@@ -491,61 +291,37 @@
     }
 
     function formatCreatedAt(value) {
-        if (!value) {
-            return "";
-        }
-
+        if (!value) return "";
         const parsed = new Date(value);
-        if (Number.isNaN(parsed.getTime())) {
-            return value;
-        }
-
+        if (Number.isNaN(parsed.getTime())) return value;
         return parsed.toLocaleString("pt-BR", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
+            day: "2-digit", month: "2-digit", year: "numeric",
+            hour: "2-digit", minute: "2-digit", second: "2-digit",
         });
     }
 
     function updateSingleImageView(data) {
-        if (!data) {
-            return;
-        }
-
+        if (!data) return;
         singleImageContentEl.innerHTML = "";
         const card = createImageCardShow(data);
         singleImageContentEl.appendChild(card);
     }
 
     function syncSelectWithImage(rawId) {
-        if (!rawId) {
-            return;
-        }
-
+        if (!rawId) return;
         const encodedId = encodeURIComponent(rawId);
         const hasOption = Array.from(selectEl.options).some(opt => opt.value === encodedId);
-        if (hasOption) {
-            selectEl.value = encodedId;
-        }
+        if (hasOption) selectEl.value = encodedId;
     }
 
-    // Cria um card de imagem reutilizável (galeria e imagem selecionada)
-    // data.url -> backend antigo (Postgres)
-    // data.data_url -> backend novo (Base64 -> data URL)
     function createImageCard(data) {
         const card = document.createElement("div");
         card.className = "image-card selectable";
         card.tabIndex = 0;
+
         const labelText = data.tag || data.id || "imagem";
         card.setAttribute("role", "button");
         card.setAttribute("aria-label", `Mostrar imagem ${labelText}`);
-
-        //const image = document.createElement("img");
-        //image.src = data.data_url || data.url || "";
-        //image.alt = data.tag || "";
 
         const body = document.createElement("div");
         body.className = "image-card-body";
@@ -554,16 +330,7 @@
         tagEl.className = "image-card-tag";
         tagEl.textContent = data.tag || "sem-tag";
 
-        //const idEl = document.createElement("div");
-        //idEl.className = "image-card-id";
-        //if (data.id !== undefined) {
-        //    idEl.textContent = `key=${data.id}`;
-        //}
-
         body.appendChild(tagEl);
-        //body.appendChild(idEl);
-
-        //card.appendChild(image);
         card.appendChild(body);
 
         const createdAtText = formatCreatedAt(data.created_at);
@@ -607,15 +374,7 @@
         tagEl.className = "image-card-tag";
         tagEl.textContent = data.tag || "sem-tag";
 
-        //const idEl = document.createElement("div");
-        //idEl.className = "image-card-id";
-        //if (data.id !== undefined) {
-        //    idEl.textContent = `key=${data.id}`;
-        //}
-
         body.appendChild(tagEl);
-        //body.appendChild(idEl);
-
         card.appendChild(image);
         card.appendChild(body);
 
@@ -630,7 +389,6 @@
         return card;
     }
 
-    // Atualiza SOMENTE o select (usado em Upload e no load inicial)
     async function refreshSelect() {
         try {
             const resp = await fetch("/api/images");
@@ -640,9 +398,8 @@
             selectEl.innerHTML = "";
             data.forEach(img => {
                 const opt = document.createElement("option");
-                // img.id aqui é a image_key vinda do backend
-                opt.value = encodeURIComponent(img.id);  // valor que vai na URL
-                opt.dataset.rawId = img.id;             // valor original (debug/opcional)
+                opt.value = encodeURIComponent(img.id);
+                opt.dataset.rawId = img.id;
                 opt.textContent = `${img.tag} (key=${img.id})`;
                 selectEl.appendChild(opt);
             });
@@ -654,23 +411,73 @@
         }
     }
 
+    // ---------------------------
+    // Upload via URL pré-assinada
+    // ---------------------------
     async function uploadImage() {
-        setStatus("Buscando imagem na API pública e salvando no banco...");
+        setStatus("Buscando imagem na Dog API...");
         try {
-            const resp = await fetch("/api/upload", { method: "POST" });
-            if (!resp.ok) throw new Error("Erro HTTP " + resp.status);
-            const data = await resp.json();
-            setStatus(`Imagem salva (id=${data.id}, tag="${data.tag}")`);
+            // 1) Pega uma imagem aleatória no front
+            const dogResp = await fetch("https://dog.ceo/api/breeds/image/random");
+            if (!dogResp.ok) throw new Error("Dog API falhou");
+            const dogData = await dogResp.json();
+            const imageUrl = dogData.message;
 
-            // Atualiza só o select
+            const parts = imageUrl.split("/");
+            const tag = (parts[4] ? parts[4].replace("-", " ") : "dog");
+
+            const imgBlob = await fetch(imageUrl).then(r => r.blob());
+            const ct = imgBlob.type || "image/jpeg";
+
+            setStatus("Gerando URL pré-assinada...");
+
+            // 2) Pede presign pro backend
+            const presignResp = await fetch("/api/presign", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    tag,
+                    content_type: ct
+                })
+            });
+
+            if (!presignResp.ok) {
+                const errText = await presignResp.text();
+                throw new Error("Presign falhou: " + errText);
+            }
+
+            const { upload_url, s3_key, image_id } = await presignResp.json();
+
+            setStatus("Enviando direto pro S3...");
+
+            // 3) Faz PUT direto no S3
+            // IMPORTANTE: tem que mandar os mesmos headers que foram assinados!
+            const putResp = await fetch(upload_url, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": ct,
+                    "x-amz-meta-tag": tag,
+                    "x-amz-meta-image_id": image_id
+                },
+                body: imgBlob
+            });
+
+            if (!putResp.ok) {
+                const errText = await putResp.text().catch(() => "");
+                throw new Error("PUT pro S3 falhou (HTTP " + putResp.status + "): " + errText);
+            }
+
+            setStatus(`Upload concluído no S3 (key=${s3_key}). Processando no Lambda...`);
+
+            // 4) Atualiza lista local (item pode aparecer após o Lambda)
             await refreshSelect();
+
         } catch (err) {
             console.error(err);
-            setStatus("Erro ao fazer upload da imagem.");
+            setStatus("Erro ao fazer upload da imagem via presign.");
         }
     }
 
-    // Listar: atualiza select E monta a galeria (todas as imagens)
     async function loadImages() {
         setStatus("Carregando imagens salvas...");
         try {
@@ -678,7 +485,6 @@
             if (!resp.ok) throw new Error("Erro HTTP " + resp.status);
             const data = await resp.json();
 
-            // Atualiza select
             selectEl.innerHTML = "";
             data.forEach(img => {
                 const opt = document.createElement("option");
@@ -688,21 +494,17 @@
                 selectEl.appendChild(opt);
             });
 
-            // Monta galeria: para cada item, busca o detalhe (/api/images/{id})
             galleryGridEl.innerHTML = "";
             for (const img of data) {
                 try {
                     const encodedId = encodeURIComponent(img.id);
                     const respItem = await fetch(`/api/images/${encodedId}`);
-                    if (!respItem.ok) {
-                        console.error("Erro ao buscar detalhe da imagem:", img.id);
-                        continue;
-                    }
+                    if (!respItem.ok) continue;
                     const fullData = await respItem.json();
                     const card = createImageCard(fullData);
                     galleryGridEl.appendChild(card);
                 } catch (e) {
-                    console.error("Erro ao montar card da imagem:", img.id, e);
+                    console.error("Erro ao montar card:", img.id, e);
                 }
             }
 
@@ -744,7 +546,6 @@
     document.getElementById("btn-list").addEventListener("click", loadImages);
     document.getElementById("btn-show").addEventListener("click", showImage);
 
-    // Carrega lista ao abrir a página
     refreshSelect();
 </script>
 </body>
