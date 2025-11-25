@@ -97,6 +97,15 @@ def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 
+@app.get("/health")
+def healthcheck():
+    """
+    Endpoint simples para balanceador verificar a instância.
+    Retorna 200 OK sem tocar em recursos externos.
+    """
+    return {"status": "ok"}
+
+
 # -------------------------------------------------------------------
 # Endpoints REST
 # -------------------------------------------------------------------
@@ -159,55 +168,6 @@ def create_presigned_upload(
         return JSONResponse(
             status_code=500,
             content={"detail": f"Erro inesperado ao gerar presigned URL: {str(e)}"},
-        )
-
-
-@app.post("/api/upload")
-def upload_image():
-    """
-    Upload server-side (mantido como teste):
-    - Busca uma imagem na Dog API
-    - Extrai uma 'tag' (raça)
-    - Faz upload dos bytes no S3
-    - Lambda salva Base64 no DynamoDB
-
-    OBS: não é mais o fluxo principal do requisito, mas é útil pra debug.
-    """
-    try:
-        resp = requests.get(DOG_API_URL, timeout=5)
-        resp.raise_for_status()
-        data = resp.json()
-        image_url = data["message"]
-
-        parts = image_url.split("/")
-        try:
-            breed_part = parts[4]
-            tag = breed_part.replace("-", " ")
-        except Exception:
-            tag = "dog"
-
-        img_resp = requests.get(image_url, timeout=10)
-        img_resp.raise_for_status()
-        image_bytes = img_resp.content
-
-        image_id = str(uuid.uuid4())
-        safe_tag = tag.replace(" ", "_")
-        s3_key = f"img/{image_id}_{safe_tag}.jpg"
-
-        s3_client.put_object(
-            Bucket=S3_BUCKET_NAME,
-            Key=s3_key,
-            Body=image_bytes,
-            ContentType="image/jpeg",
-            Metadata={"tag": tag, "image_id": image_id},
-        )
-
-        return {"id": image_id, "tag": tag, "s3_key": s3_key}
-
-    except Exception as e:
-        return JSONResponse(
-            status_code=500,
-            content={"detail": f"Erro ao fazer upload da imagem: {str(e)}"},
         )
 
 
